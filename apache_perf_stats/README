@@ -1,0 +1,4 @@
+This needs something like the following in your web server config:
+
+    LogFormat "%t \"%r\" %>s %T" perf_log
+    CustomLog "|/usr/sbin/rotatelogs /var/log/ganglia/site.perf_%Y-%m-%d 86400 -0" perf_log

@@ -1,0 +1,18 @@
+modules {
+  module {
+    name = "apache_perf_stats"
+    language = "python"
+    param PerfLogGlob {
+        value = /var/log/ganglia/*
+    }
+  }
+}
+
+collection_group {
+  collect_every = 10
+  time_threshold = 20
+  metric {
+    name = "apache_avg_res_time"
+    value_threshold = 20.0
+  }
+}
