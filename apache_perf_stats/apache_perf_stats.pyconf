@@ -15,4 +15,8 @@ collection_group {
     name = "apache_avg_res_time"
     value_threshold = 20.0
   }
+  metric {
+    name = "apache_req_per_sec"
+    value_threshold = 20.0
+  }
 }

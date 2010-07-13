@@ -2,6 +2,7 @@ from glob import glob
 import os
 import re
 import time
+import urllib2
 
 
 def newest_file(file_glob):
@@ -57,6 +58,24 @@ def apache_stats(log_glob):
             times = []
 
 
+def apache_server_status():
+    interesting = {'Total Accesses': int}
+    status = None
+
+    try:
+        status = urllib2.urlopen('http://localhost/server-status?auto')
+    except urllib2.URLError:
+        return 0
+
+    stats = {}
+    for line in status:
+        key, value = line.strip().split(': ')
+        if key in interesting:
+            stats[key] = interesting[key](value)
+
+    return stats
+
+
 class Metric(object):
 
     def __init__(self, name, description, units="Items"):
@@ -78,6 +97,30 @@ class Metric(object):
             'groups': 'apachestats',
         }
 
+
+class ServerStatusMetric(Metric):
+
+    def __init__(self, *args, **kwargs):
+        super(ServerStatusMetric, self).__init__(*args, **kwargs)
+        self.prev = None
+        self.prev_time = None
+
+    def callback(self, name):
+        stats = apache_server_status() 
+        total_accesses = stats['Total Accesses']
+
+        r = 0
+        now = time.time()
+
+        if self.prev and self.prev <= total_accesses:
+            r = total_accesses - self.prev / (now - self.prev_time)
+
+        self.prev = total_accesses
+        self.prev_time = now
+
+        return r
+
+
 class LogMetric(Metric):
 
     def __init__(self, *args, **kwargs):
@@ -90,18 +133,23 @@ class LogMetric(Metric):
 
         return self.stats.next()
 
+
 METRICS = [
-    LogMetric("avg_res_time", "Average Response Time", "Seconds")
+    LogMetric("avg_res_time", "Average Response Time", "Seconds"),
+    ServerStatusMetric("req_per_sec", "Requests per second", "Requests"),
 ]
+
 
 def metric_init(params):
     return [m.create_descriptor(params) for m in METRICS]
 
+
 def metric_cleanup():
     pass
 
+
 if __name__ == "__main__":
-    metrics = metric_init({})
+    metrics = metric_init({'PerfLogGlob': '/var/log/ganglia/perf_*'})
     for m in metrics:
         print m['call_back'](m['name'])
     time.sleep(30)
