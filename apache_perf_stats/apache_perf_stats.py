@@ -109,11 +109,11 @@ class ServerStatusMetric(Metric):
         stats = apache_server_status() 
         total_accesses = stats['Total Accesses']
 
-        r = 0
+        r = 0.0
         now = time.time()
 
         if self.prev and self.prev <= total_accesses:
-            r = total_accesses - self.prev / (now - self.prev_time)
+            r = (total_accesses - self.prev) / (now - self.prev_time)
 
         self.prev = total_accesses
         self.prev_time = now
